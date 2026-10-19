@@ -1,0 +1,11 @@
+{
+  "name": "pertrack",
+  "private": true,
+  "scripts": {
+    "web": "npx serve web",
+    "mobile": "npm --prefix mobile run start",
+    "mobile:android": "npm --prefix mobile run android",
+    "mobile:ios": "npm --prefix mobile run ios",
+    "install:mobile": "npm --prefix mobile install"
+  }
+}

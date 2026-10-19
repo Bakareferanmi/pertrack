@@ -1,0 +1,38 @@
+{
+  "expo": {
+    "name": "PERTRACK",
+    "slug": "pertrack",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.beepeelabs.pertrack"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#0B3B36",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false,
+      "package": "com.beepeelabs.pertrack"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro",
+      "name": "PERTRACK"
+    },
+    "scheme": "pertrack",
+    "plugins": [
+      [
+        "expo-notifications",
+        {
+          "color": "#0B7A6B"
+        }
+      ]
+    ]
+  }
+}
