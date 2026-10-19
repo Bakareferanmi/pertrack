@@ -1,10 +1,23 @@
 import { Platform } from 'react-native';
-import * as Notifications from 'expo-notifications';
+import Constants, { ExecutionEnvironment } from 'expo-constants';
 import { Period, State, classLabel, fmt, greetingName, toMin } from './core';
 
 const IOS_LIMIT = 60; // iOS keeps at most 64 pending local notifications
 
-if (Platform.OS !== 'web') {
+/**
+ * Expo Go on Android no longer supports expo-notifications (importing it throws a red-screen error),
+ * and the web has no native reminders. In those cases the module is never loaded and every
+ * function below becomes a safe no-op, so the rest of the app still runs.
+ * Use a development build (`npx expo run:android`) to get real reminders on Android.
+ */
+const inExpoGo = Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
+export const remindersSupported = Platform.OS !== 'web' && !(Platform.OS === 'android' && inExpoGo);
+
+const Notifications: typeof import('expo-notifications') = remindersSupported
+  ? require('expo-notifications')
+  : (null as never);
+
+if (remindersSupported) {
   Notifications.setNotificationHandler({
     handleNotification: async () => ({
       shouldShowBanner: true, shouldShowList: true, shouldPlaySound: true, shouldSetBadge: false,
@@ -24,13 +37,13 @@ async function ensureChannels() {
 }
 
 export async function permissionGranted(): Promise<boolean> {
-  if (Platform.OS === 'web') return false;
+  if (!remindersSupported) return false;
   const p = await Notifications.getPermissionsAsync();
   return p.granted;
 }
 
 export async function askPermission(): Promise<boolean> {
-  if (Platform.OS === 'web') return false;
+  if (!remindersSupported) return false;
   await ensureChannels();
   const cur = await Notifications.getPermissionsAsync();
   if (cur.granted) return true;
@@ -61,7 +74,7 @@ export function buildSlots(periods: Period[], now = new Date()): Slot[] {
 }
 
 export async function syncReminders(state: State): Promise<{ scheduled: number; capped: boolean }> {
-  if (Platform.OS === 'web') return { scheduled: 0, capped: false };
+  if (!remindersSupported) return { scheduled: 0, capped: false };
   await Notifications.cancelAllScheduledNotificationsAsync();
   if (!(await permissionGranted())) return { scheduled: 0, capped: false };
   await ensureChannels();
@@ -93,7 +106,7 @@ export async function syncReminders(state: State): Promise<{ scheduled: number; 
 }
 
 export async function sendTest(sound: boolean) {
-  if (Platform.OS === 'web') return;
+  if (!remindersSupported) return;
   await ensureChannels();
   await Notifications.scheduleNotificationAsync({
     content: { title: 'PERTRACK test', body: 'Reminders are working on this phone.', sound },

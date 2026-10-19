@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Alert, Platform, ScrollView, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { TITLES, greetingName } from '../core';
-import { askPermission, permissionGranted, sendTest } from '../notify';
+import { askPermission, permissionGranted, remindersSupported, sendTest } from '../notify';
 import { useStore } from '../store';
 import { useTheme } from '../theme';
 import { Btn, Card, Chip, Label, Row, T, Toggle } from '../ui';
@@ -71,9 +71,9 @@ export function Settings() {
           <View style={rowStyle}>
             <View style={{ flex: 1, paddingRight: 12 }}>
               <T weight="600">Class reminders</T>
-              <T size={13} muted>{Platform.OS === 'web' ? 'Phone reminders work in the mobile app.' : granted ? 'On — they fire even when the app is closed.' : 'Off — allow notifications to get reminders.'}</T>
+              <T size={13} muted>{Platform.OS === 'web' ? 'Phone reminders work in the mobile app.' : !remindersSupported ? 'Not available in Expo Go on Android. Use a development build to get reminders.' : granted ? 'On — they fire even when the app is closed.' : 'Off — allow notifications to get reminders.'}</T>
             </View>
-            {granted ? <T color={c.primary} weight="700">Enabled</T> : <Btn testID="enable-notif" label="Enable" onPress={enable} />}
+            {!remindersSupported ? null : granted ? <T color={c.primary} weight="700">Enabled</T> : <Btn testID="enable-notif" label="Enable" onPress={enable} />}
           </View>
           <View style={rowStyle}>
             <T weight="600">Sound & vibration</T>
