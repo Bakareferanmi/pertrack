@@ -34,6 +34,7 @@ export function PeriodSheet({ period, defaultDay, onClose }: { period?: Period; 
   const save = () => {
     if (!subject.trim()) return setErr('Choose or type a subject.');
     if (!days.length) return setErr('Pick at least one day.');
+    if (!num.trim()) return setErr('Enter the period number (e.g. 3).');
     if (!validTime(start) || !validTime(end)) return setErr('Enter times like 08:30 (24-hour).');
     if (toMin(end) <= toMin(start)) return setErr('End time must be after start time.');
     const next: Period = { id: period?.id ?? uid(), subject: subject.trim(), level, division, days, start, end, room: room.trim(), period: num.trim(), pre, at };
@@ -80,7 +81,7 @@ export function PeriodSheet({ period, defaultDay, onClose }: { period?: Period; 
               </View>
             </View>
 
-            <Label>Period (optional)</Label>
+            <Label>Period</Label>
             <TextInput testID="f-period" value={num} onChangeText={(v) => setNum(v.replace(/[^0-9]/g, '').slice(0, 2))} placeholder="e.g. 3 for 3rd period" placeholderTextColor={c.muted} keyboardType="number-pad" maxLength={2} style={input} />
 
             <Label>Room (optional)</Label>

@@ -422,7 +422,7 @@ el.innerHTML=`<div class="sbg" data-act="closeSheet"></div><div class="sheet" ro
 <div class="chs eq">${divs.map(v=>`<button type="button" class="ch ${v===d.division?'on2':''}" aria-pressed="${v===d.division}" data-act="f-div" data-v="${v}"><i class="dot ${DC[v]}" style="margin:0"></i>${v}</button>`).join('')}</div></div>
 <div class="fld"><span class="lbl">Repeats every</span><div class="days">${[1,2,3,4,5,6].filter(i=>i<6||sat()||d.days.includes(6)).map(i=>`<button type="button" class="ch ${d.days.includes(i)?'on':''}" aria-pressed="${d.days.includes(i)}" data-act="f-day" data-d="${i}">${DAYS[i]}</button>`).join('')}</div></div>
 <div class="row3"><div class="fld"><label for="f-start">Starts</label><input id="f-start" class="in" type="time" data-f="start" value="${esc(d.start)}"></div><div class="fld"><label for="f-end">Ends</label><input id="f-end" class="in" type="time" data-f="end" value="${esc(d.end)}"></div></div>
-<div class="fld"><label for="f-period">Period (optional)</label><input id="f-period" class="in" data-f="period" inputmode="numeric" maxlength="2" value="${esc(d.period||'')}" placeholder="e.g. 3 for 3rd period"></div>
+<div class="fld"><label for="f-period">Period</label><input id="f-period" class="in" data-f="period" inputmode="numeric" maxlength="2" value="${esc(d.period||'')}" placeholder="e.g. 3 for 3rd period"></div>
 <div class="fld"><label for="f-room">Room (optional)</label><input id="f-room" class="in" data-f="room" value="${esc(d.room)}" placeholder="e.g. Room 4"></div>
 <div class="card" style="padding:4px 16px"><h3 style="padding-top:10px">Remind me</h3>${tog('pre','5 minutes before',sM===null?'Set a start time':fmt(sM-5)+' · starts in 5 min')}${tog('at','At start time',sM===null?'Set a start time':d.start+' · time for class')}</div>
 ${d.err?`<p class="err" role="alert">${esc(d.err)}</p>`:''}
@@ -433,6 +433,7 @@ function saveP(){
 const d=ui.sheet;
 if(!d.subject)d.err='Pick a subject (add some in Settings).';
 else if(!d.days.length)d.err='Choose at least one day.';
+else if(!String(d.period||'').trim())d.err='Enter the period number (e.g. 3).';
 else if(!/^\d\d:\d\d$/.test(d.start)||!/^\d\d:\d\d$/.test(d.end))d.err='Set a start and end time.';
 else if(toMin(d.end)<=toMin(d.start))d.err='End time must be after the start time.';
 else d.err='';
