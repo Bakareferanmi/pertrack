@@ -1,6 +1,6 @@
 import { Pressable, ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { DAYS, Period, classLabel, countdown, fmt, greetingName, periodsOn, statuses, toMin } from '../core';
+import { DAYS, Period, classLabel, countdown, fmt, greetingName, periodLabel, periodsOn, statuses, toMin } from '../core';
 import { useStore } from '../store';
 import { useTheme } from '../theme';
 import { Btn, Card, T } from '../ui';
@@ -21,7 +21,7 @@ export function PeriodRow({ p, tag, onEdit, onBell }: { p: Period; tag?: 'live' 
             {tag === 'live' ? <T size={11} weight="800" color={c.onAmber} style={{ backgroundColor: c.amber, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 8, overflow: 'hidden' }}>NOW</T> : null}
             {tag === 'next' ? <T size={11} weight="800" color={c.selText} style={{ backgroundColor: c.selBg, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 8, overflow: 'hidden' }}>NEXT</T> : null}
           </View>
-          <T size={13} muted>{classLabel(p)}{p.room ? ` · ${p.room}` : ''}</T>
+          <T size={13} muted>{[periodLabel(p), classLabel(p), p.room].filter(Boolean).join(' · ')}</T>
         </View>
         <Pressable testID="bell" hitSlop={10} onPress={onBell}
           style={{ width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: bellOn ? c.selBg : c.off }}>
@@ -68,7 +68,7 @@ export function Today({ now, onAdd, onEdit }: { now: Date; onAdd: () => void; on
                 {heroLive ? 'IN SESSION' : `STARTS IN ${countdown(toMin(hero.start) * 60 - nowSec).toUpperCase()}`}
               </T>
               <T size={26} weight="800" color={c.onHero} style={{ marginTop: 6 }}>{hero.subject}</T>
-              <T color="#CFE9E4" style={{ marginTop: 2 }}>{classLabel(hero)}{hero.room ? ` · ${hero.room}` : ''}</T>
+              <T color="#CFE9E4" style={{ marginTop: 2 }}>{[periodLabel(hero), classLabel(hero), hero.room].filter(Boolean).join(' · ')}</T>
               <T color="#CFE9E4" style={{ marginTop: 10 }}>{fmt(hero.start)} – {fmt(hero.end)}</T>
               <View style={{ flexDirection: 'row', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
                 {hero.pre ? <T size={12} color="#CFE9E4" style={{ backgroundColor: 'rgba(255,255,255,0.12)', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999, overflow: 'hidden' }}>⏰ 5 min before · {fmt(minusFive(hero.start))}</T> : null}

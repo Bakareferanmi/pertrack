@@ -31,8 +31,7 @@ export function Onboarding() {
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
           <Logo size={56} />
-          <T size={28} weight="800" style={{ marginTop: 18 }}>Welcome to PERTRACK</T>
-          <T muted style={{ marginTop: 6 }}>Never miss a class. We'll remind you 5 minutes before and right when it starts.</T>
+          <T muted style={{ marginTop: 18 }}>Never miss a class. We'll remind you 5 minutes before and right when it starts.</T>
 
           <Label>Your name</Label>
           <TextInput testID="ob-name" value={name} onChangeText={setName} placeholder="e.g. Ngozi Okafor"

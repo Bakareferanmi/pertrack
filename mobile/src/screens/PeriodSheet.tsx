@@ -20,6 +20,7 @@ export function PeriodSheet({ period, defaultDay, onClose }: { period?: Period; 
   const [start, setStart] = useState(period?.start ?? '');
   const [end, setEnd] = useState(period?.end ?? '');
   const [room, setRoom] = useState(period?.room ?? '');
+  const [num, setNum] = useState(period?.period ?? '');
   const [pre, setPre] = useState(period?.pre ?? true);
   const [at, setAt] = useState(period?.at ?? true);
   const [err, setErr] = useState('');
@@ -35,7 +36,7 @@ export function PeriodSheet({ period, defaultDay, onClose }: { period?: Period; 
     if (!days.length) return setErr('Pick at least one day.');
     if (!validTime(start) || !validTime(end)) return setErr('Enter times like 08:30 (24-hour).');
     if (toMin(end) <= toMin(start)) return setErr('End time must be after start time.');
-    const next: Period = { id: period?.id ?? uid(), subject: subject.trim(), level, division, days, start, end, room: room.trim(), pre, at };
+    const next: Period = { id: period?.id ?? uid(), subject: subject.trim(), level, division, days, start, end, room: room.trim(), period: num.trim(), pre, at };
     update((s) => {
       const subjects = s.subjects.some((x) => x.toLowerCase() === next.subject.toLowerCase()) ? s.subjects : [...s.subjects, next.subject];
       const periods = period ? s.periods.map((p) => (p.id === period.id ? next : p)) : [...s.periods, next];
@@ -78,6 +79,9 @@ export function PeriodSheet({ period, defaultDay, onClose }: { period?: Period; 
                 <TextInput testID="f-end" value={end} onChangeText={(v) => setEnd(maskTime(v))} placeholder="09:10" placeholderTextColor={c.muted} keyboardType="number-pad" maxLength={5} style={input} />
               </View>
             </View>
+
+            <Label>Period (optional)</Label>
+            <TextInput testID="f-period" value={num} onChangeText={(v) => setNum(v.replace(/[^0-9]/g, '').slice(0, 2))} placeholder="e.g. 3 for 3rd period" placeholderTextColor={c.muted} keyboardType="number-pad" maxLength={2} style={input} />
 
             <Label>Room (optional)</Label>
             <TextInput testID="f-room" value={room} onChangeText={setRoom} placeholder="e.g. Room 4" placeholderTextColor={c.muted} style={input} />

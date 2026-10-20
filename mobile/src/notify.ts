@@ -1,6 +1,6 @@
 import { Platform } from 'react-native';
 import Constants, { ExecutionEnvironment } from 'expo-constants';
-import { Period, State, classLabel, fmt, greetingName, toMin } from './core';
+import { Period, State, classLabel, fmt, greetingName, periodLabel, toMin } from './core';
 
 const IOS_LIMIT = 60; // iOS keeps at most 64 pending local notifications
 
@@ -97,7 +97,7 @@ export async function syncReminders(state: State): Promise<{ scheduled: number; 
         title: s.kind === 'pre'
           ? `${s.period.subject} starts in 5 minutes`
           : `Time for ${s.period.subject}`,
-        body: `${classLabel(s.period)} · ${fmt(s.period.start)}${room}${who ? ` — ${who}` : ''}`,
+        body: `${periodLabel(s.period) ? `${periodLabel(s.period)} · ` : ''}${classLabel(s.period)} · ${fmt(s.period.start)}${room}${who ? ` — ${who}` : ''}`,
         sound: state.settings.sound,
         data: { periodId: s.period.id, kind: s.kind },
       },

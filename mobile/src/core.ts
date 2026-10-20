@@ -10,6 +10,7 @@ export type Period = {
   start: string;      // "HH:MM" 24h
   end: string;
   room: string;
+  period?: string;    // period number the teacher types in (e.g. "3"); optional
   pre: boolean;       // 5 minutes before
   at: boolean;        // at start time
 };
@@ -66,6 +67,9 @@ export const greetingName = (p: State['profile']) => {
 };
 
 export const classLabel = (p: Period) => `${p.level} ${p.division}`;
+
+/** "Period 3" when the teacher entered one, else empty. */
+export const periodLabel = (p: Period) => (p.period?.trim() ? `Period ${p.period.trim()}` : '');
 
 export const byStart = (a: Period, b: Period) => toMin(a.start) - toMin(b.start);
 
