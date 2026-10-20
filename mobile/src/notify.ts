@@ -11,11 +11,16 @@ const IOS_LIMIT = 60; // iOS keeps at most 64 pending local notifications
  * Use a development build (`npx expo run:android`) to get real reminders on Android.
  */
 const inExpoGo = Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
-export const remindersSupported = Platform.OS !== 'web' && !(Platform.OS === 'android' && inExpoGo);
 
-const Notifications: typeof import('expo-notifications') = remindersSupported
-  ? require('expo-notifications')
-  : (null as never);
+// Load lazily and defensively: if the native module is missing (older Expo Go, web, etc.)
+// the require throws, we catch it, and reminders simply stay off instead of crashing the app.
+function loadNotifications(): typeof import('expo-notifications') | null {
+  if (Platform.OS === 'web' || (Platform.OS === 'android' && inExpoGo)) return null;
+  try { return require('expo-notifications'); } catch { return null; }
+}
+
+const Notifications: typeof import('expo-notifications') = loadNotifications() as never;
+export const remindersSupported = Notifications != null;
 
 if (remindersSupported) {
   Notifications.setNotificationHandler({
