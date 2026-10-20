@@ -6,7 +6,7 @@ export type Period = {
   subject: string;
   level: string;      // JSS 1..3 | SS 1..3
   division: string;   // Ruby/Scarlet/Emerald | Science/Art/Commercial
-  days: number[];     // 1=Mon .. 5=Fri (JS getDay)
+  days: number[];     // 1=Mon .. 6=Sat (JS getDay)
   start: string;      // "HH:MM" 24h
   end: string;
   room: string;
@@ -19,12 +19,12 @@ export type State = {
   profile: { name: string; title: Title } | null;
   subjects: string[];
   periods: Period[];
-  settings: { theme: 'auto' | 'light' | 'dark'; sound: boolean };
+  settings: { theme: 'auto' | 'light' | 'dark'; sound: boolean; saturday: boolean };
 };
 
 export const EMPTY: State = {
   v: 1, profile: null, subjects: [], periods: [],
-  settings: { theme: 'auto', sound: true },
+  settings: { theme: 'auto', sound: true, saturday: false },
 };
 
 export const LEVELS = ['JSS 1', 'JSS 2', 'JSS 3', 'SS 1', 'SS 2', 'SS 3'];
@@ -32,7 +32,14 @@ export const DAYS = [
   { n: 1, short: 'Mon', long: 'Monday' }, { n: 2, short: 'Tue', long: 'Tuesday' },
   { n: 3, short: 'Wed', long: 'Wednesday' }, { n: 4, short: 'Thu', long: 'Thursday' },
   { n: 5, short: 'Fri', long: 'Friday' },
+  { n: 6, short: 'Sat', long: 'Saturday' },
 ];
+
+/** Days shown in the app: Mon–Fri, plus Saturday when the user turns it on. */
+export const daysFor = (saturday: boolean) => (saturday ? DAYS : DAYS.filter((d) => d.n <= 5));
+
+/** First day to show when the app opens: today if it's an enabled school day, else Monday. */
+export const startDay = (today: number, saturday: boolean) => (daysFor(saturday).some((d) => d.n === today) ? today : 1);
 
 export const divisionsFor = (level: string) =>
   level.startsWith('JSS') ? ['Ruby', 'Scarlet', 'Emerald'] : ['Science', 'Art/Commercial'];

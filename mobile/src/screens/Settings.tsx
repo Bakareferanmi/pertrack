@@ -66,6 +66,17 @@ export function Settings() {
           </View>
         </Card>
 
+        <Label>Schedule</Label>
+        <Card>
+          <View style={rowStyle}>
+            <View style={{ flex: 1, paddingRight: 12 }}>
+              <T weight="600">Include Saturday</T>
+              <T size={13} muted>Add Saturday to your timetable and reminders. Off by default.</T>
+            </View>
+            <Toggle on={state.settings.saturday} onChange={(v) => update((s) => ({ ...s, settings: { ...s.settings, saturday: v } }))} />
+          </View>
+        </Card>
+
         <Label>Notifications</Label>
         <Card>
           <View style={rowStyle}>

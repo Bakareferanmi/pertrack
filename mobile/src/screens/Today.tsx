@@ -38,7 +38,7 @@ export function Today({ now, onAdd, onEdit }: { now: Date; onAdd: () => void; on
   const day = now.getDay();
   const nowMin = now.getHours() * 60 + now.getMinutes();
   const nowSec = nowMin * 60 + now.getSeconds();
-  const list = periodsOn(state.periods, day);
+  const list = day === 6 && !state.settings.saturday ? [] : periodsOn(state.periods, day);
   const st = statuses(list, nowMin);
   const idx = st.findIndex((x) => x === 'live' || x === 'next');
   const hero = idx >= 0 ? list[idx] : null;

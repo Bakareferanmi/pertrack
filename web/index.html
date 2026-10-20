@@ -164,12 +164,14 @@ const DC={Ruby:'ruby',Scarlet:'scarlet',Emerald:'emerald',Science:'science','Art
 const grpOf=l=>l.startsWith('JSS')?'JSS':'SS';
 
 /* ---------- storage ---------- */
-const defaults=()=>({v:1,profile:null,subjects:[],periods:[],settings:{theme:'auto',sound:true,awake:false},fired:{}});
+const defaults=()=>({v:1,profile:null,subjects:[],periods:[],settings:{theme:'auto',sound:true,awake:false,saturday:false},fired:{}});
 function load(){try{const r=JSON.parse(localStorage.getItem(KEY));if(r&&r.v===1){const d=defaults();return{...d,...r,settings:{...d.settings,...r.settings}}}}catch(e){}return defaults()}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
 let S=load();
 const ui={tab:'today',day:1,sheet:null,banner:null,ob:{name:'',title:'Mrs.',subjects:[]}};
-{const d=new Date().getDay();ui.day=d>=1&&d<=5?d:1}
+const sat=()=>!!S.settings.saturday;                 // Saturday is an optional school day (Settings)
+const dayNums=()=>sat()?[1,2,3,4,5,6]:[1,2,3,4,5];
+{const d=new Date().getDay();ui.day=dayNums().includes(d)?d:1}
 
 /* ---------- helpers ---------- */
 const pad=n=>String(n).padStart(2,'0');
@@ -184,12 +186,12 @@ const hello=()=>{const h=new Date().getHours();return h<12?'Good morning':h<17?'
 const callOf=(name,title)=>{const w=String(name).trim().split(/\s+/).filter(Boolean);return w.length?(title+' '+w[w.length-1]).trim():'Teacher'};
 const callName=()=>S.profile?callOf(S.profile.name,S.profile.title):'Teacher';
 const initials=()=>S.profile?S.profile.name.trim().split(/\s+/).slice(0,2).map(w=>w[0]||'').join('').toUpperCase():'';
-const todays=(d=new Date())=>S.periods.filter(p=>p.days.includes(d.getDay())).sort((a,b)=>toMin(a.start)-toMin(b.start));
-const onDay=n=>S.periods.filter(p=>p.days.includes(n)).sort((a,b)=>toMin(a.start)-toMin(b.start));
+const todays=(d=new Date())=>S.periods.filter(p=>p.days.includes(d.getDay())&&(d.getDay()!==6||sat())).sort((a,b)=>toMin(a.start)-toMin(b.start));
+const onDay=n=>S.periods.filter(p=>p.days.includes(n)&&(n!==6||sat())).sort((a,b)=>toMin(a.start)-toMin(b.start));
 function status(now=new Date()){const n=secNow(now),list=todays(now);return{n,list,live:list.find(p=>n>=toMin(p.start)*60&&n<toMin(p.end)*60),next:list.find(p=>toMin(p.start)*60>n)}}
 function upcomingDay(now){for(let i=1;i<=7;i++){const d=new Date(now);d.setDate(d.getDate()+i);const l=todays(d);if(l.length)return{i,d,p:l[0]}}return null}
 function cdText(sec){sec=Math.max(0,Math.ceil(sec));const h=Math.floor(sec/3600),m=Math.floor(sec%3600/60),s=sec%60;return h>0?h+'h '+pad(m)+'m':pad(m)+':'+pad(s)}
-function weekDates(){const d=new Date(),w=d.getDay(),b=new Date(d);b.setDate(d.getDate()+(w===6?2:w===0?1:1-w));return[1,2,3,4,5].map(i=>{const x=new Date(b);x.setDate(b.getDate()+i-1);return x})}
+function weekDates(){const d=new Date(),w=d.getDay(),b=new Date(d);b.setDate(d.getDate()+(w===6&&!sat()?2:w===0?1:1-w));return dayNums().map(i=>{const x=new Date(b);x.setDate(b.getDate()+i-1);return x})}
 
 /* ---------- icons ---------- */
 const ic={
@@ -351,11 +353,12 @@ ${st.list.length?st.list.map(p=>prow(p,st,true)).join(''):`<div class="empty">${
 </div></div>`;
 }
 function vTimetable(){
-const wd=weekDates(),now=new Date(),st=status(now),td=now.getDay();
-const rng=`${wd[0].getDate()} ${wd[0].toLocaleDateString('en-GB',{month:'short'})} – ${wd[4].getDate()} ${wd[4].toLocaleDateString('en-GB',{month:'short'})}`;
+if(!dayNums().includes(ui.day))ui.day=1;
+const wd=weekDates(),now=new Date(),st=status(now),td=now.getDay(),last=wd[wd.length-1];
+const rng=`${wd[0].getDate()} ${wd[0].toLocaleDateString('en-GB',{month:'short'})} – ${last.getDate()} ${last.toLocaleDateString('en-GB',{month:'short'})}`;
 return`<div class="top"><div><p class="mu s">Week of ${rng}</p><h1 class="disp">Timetable</h1></div><button type="button" class="btn pri" data-act="add">${svg('plus',18,2.6)}Add period</button></div>
 <div class="dayrow">${wd.map((d,i)=>`<button type="button" class="dayb ${i+1===ui.day?'on':''} ${i+1===td?'today':''}" data-act="day" data-d="${i+1}" aria-pressed="${i+1===ui.day}"><span>${DAYS[i+1]}</span><b>${d.getDate()}</b></button>`).join('')}</div>
-<div class="cols">${wd.map((d,i)=>{const l=onDay(i+1);return`<section class="col ${i+1===ui.day?'on':''}"><h3 class="colh disp ${i+1===td?'today':''}">${DAYS[i+1]} ${d.getDate()}</h3>${l.length?l.map(p=>prow(p,st,i+1===td)).join(''):'<div class="empty">No periods</div>'}</section>`}).join('')}</div>`;
+<div class="cols" style="grid-template-columns:repeat(${wd.length},minmax(0,1fr))">${wd.map((d,i)=>{const l=onDay(i+1);return`<section class="col ${i+1===ui.day?'on':''}"><h3 class="colh disp ${i+1===td?'today':''}">${DAYS[i+1]} ${d.getDate()}</h3>${l.length?l.map(p=>prow(p,st,i+1===td)).join(''):'<div class="empty">No periods</div>'}</section>`}).join('')}</div>`;
 }
 const sw=(on,a,k,l,sm)=>`<div class="srow"><div><b>${l}</b><small>${sm}</small></div><button type="button" class="swb" role="switch" aria-checked="${on}" aria-label="${l}" data-act="${a}"><span class="sw ${on?'on':''}"><i></i></span></button></div>`;
 function vSettings(){
@@ -369,6 +372,8 @@ return`<div class="top"><div><p class="mu s">Saved on this device</p><h1 class="
 <div class="card"><h3>Subjects</h3><div class="chs" style="margin-top:10px">${S.subjects.length?subChips(S.subjects,'subj-rm'):'<span class="hint">No subjects yet.</span>'}</div>
 <div class="addrow" style="margin-top:10px"><input id="set-sub" class="in" data-enter="subj-add" placeholder="Type a subject" aria-label="Add a subject"><button type="button" class="btn pri" data-act="subj-add">${svg('plus',16,2.6)}Add</button></div></div>
 </div><div>
+<div class="card"><h3>Schedule</h3>
+${sw(S.settings.saturday,'saturday','saturday','Include Saturday','Add Saturday to your timetable and reminders')}</div>
 <div class="card"><h3>Reminders</h3>
 <div class="srow"><div><b>Notifications</b><small>${pm}</small></div>${perm==='default'?'<button type="button" class="btn pri" style="height:40px" data-act="enableNotif">Enable</button>':''}</div>
 ${sw(S.settings.sound,'sound','sound','Sound','A chime when a reminder fires')}
@@ -397,7 +402,7 @@ scrollTo(0,y);
 /* ---------- add / edit sheet ---------- */
 function openSheet(p){
 const dow=new Date().getDay();
-ui.sheet=p?{...p,days:p.days.slice(),err:''}:{id:null,subject:S.subjects[0]||'',level:'JSS 1',division:'Ruby',days:[ui.tab==='timetable'?ui.day:(dow>=1&&dow<=5?dow:1)],start:'08:00',end:'08:40',room:'',pre:true,at:true,err:''};
+ui.sheet=p?{...p,days:p.days.slice(),err:''}:{id:null,subject:S.subjects[0]||'',level:'JSS 1',division:'Ruby',days:[ui.tab==='timetable'?ui.day:(dayNums().includes(dow)?dow:1)],start:'08:00',end:'08:40',room:'',pre:true,at:true,err:''};
 renderSheet();
 }
 function renderSheet(){
@@ -413,7 +418,7 @@ el.innerHTML=`<div class="sbg" data-act="closeSheet"></div><div class="sheet" ro
 <div class="fld"><span class="lbl">Subject</span><div class="chs">${subs.length?subs.map(s=>`<button type="button" class="ch ${s===d.subject?'on':''}" aria-pressed="${s===d.subject}" data-act="f-subject" data-v="${esc(s)}">${esc(s)}</button>`).join(''):'<span class="hint">Add subjects in Settings first.</span>'}</div></div>
 <div class="fld"><span class="lbl">Class</span><div class="chs eq">${LEVELS.map(l=>`<button type="button" class="ch ${l===d.level?'on':''}" style="font-size:13px" aria-pressed="${l===d.level}" data-act="f-level" data-v="${l}">${l}</button>`).join('')}</div>
 <div class="chs eq">${divs.map(v=>`<button type="button" class="ch ${v===d.division?'on2':''}" aria-pressed="${v===d.division}" data-act="f-div" data-v="${v}"><i class="dot ${DC[v]}" style="margin:0"></i>${v}</button>`).join('')}</div></div>
-<div class="fld"><span class="lbl">Repeats every</span><div class="days">${[1,2,3,4,5].map(i=>`<button type="button" class="ch ${d.days.includes(i)?'on':''}" aria-pressed="${d.days.includes(i)}" data-act="f-day" data-d="${i}">${DAYS[i]}</button>`).join('')}</div></div>
+<div class="fld"><span class="lbl">Repeats every</span><div class="days">${[1,2,3,4,5,6].filter(i=>i<6||sat()||d.days.includes(6)).map(i=>`<button type="button" class="ch ${d.days.includes(i)?'on':''}" aria-pressed="${d.days.includes(i)}" data-act="f-day" data-d="${i}">${DAYS[i]}</button>`).join('')}</div></div>
 <div class="row3"><div class="fld"><label for="f-start">Starts</label><input id="f-start" class="in" type="time" data-f="start" value="${esc(d.start)}"></div><div class="fld"><label for="f-end">Ends</label><input id="f-end" class="in" type="time" data-f="end" value="${esc(d.end)}"></div></div>
 <div class="fld"><label for="f-room">Room (optional)</label><input id="f-room" class="in" data-f="room" value="${esc(d.room)}" placeholder="e.g. Room 4"></div>
 <div class="card" style="padding:4px 16px"><h3 style="padding-top:10px">Remind me</h3>${tog('pre','5 minutes before',sM===null?'Set a start time':fmt(sM-5)+' · starts in 5 min')}${tog('at','At start time',sM===null?'Set a start time':d.start+' · time for class')}</div>
@@ -462,6 +467,7 @@ case'subj-rm':S.subjects.splice(+b.dataset.i,1);save();render();break;
 case'ptitle':S.profile.title=v;save();render();break;
 case'theme':S.settings.theme=v;save();render();break;
 case'sound':S.settings.sound=!S.settings.sound;save();render();if(S.settings.sound)beep(1);break;
+case'saturday':S.settings.saturday=!S.settings.saturday;save();render();break;
 case'awake':S.settings.awake=!S.settings.awake;save();applyAwake();render();break;
 case'enableNotif':askNotif();break;
 case'testAlert':testAlert();break;

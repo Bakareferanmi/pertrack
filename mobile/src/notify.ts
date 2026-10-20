@@ -59,11 +59,12 @@ export async function askPermission(): Promise<boolean> {
 type Slot = { period: Period; kind: 'pre' | 'at'; weekday: number; hour: number; minute: number; rank: number };
 
 /** Build every weekly reminder slot. expo weekday: 1=Sunday..7=Saturday. */
-export function buildSlots(periods: Period[], now = new Date()): Slot[] {
+export function buildSlots(periods: Period[], now = new Date(), saturday = false): Slot[] {
   const slots: Slot[] = [];
   const nowRank = now.getDay() * 1440 + now.getHours() * 60 + now.getMinutes();
   for (const p of periods) {
     for (const d of p.days) {
+      if (d === 6 && !saturday) continue;
       for (const kind of ['pre', 'at'] as const) {
         if (!p[kind]) continue;
         let m = toMin(p.start) - (kind === 'pre' ? 5 : 0);
@@ -84,7 +85,7 @@ export async function syncReminders(state: State): Promise<{ scheduled: number; 
   if (!(await permissionGranted())) return { scheduled: 0, capped: false };
   await ensureChannels();
 
-  let slots = buildSlots(state.periods);
+  let slots = buildSlots(state.periods, new Date(), state.settings.saturday);
   const capped = Platform.OS === 'ios' && slots.length > IOS_LIMIT;
   if (capped) slots = slots.slice(0, IOS_LIMIT);
 

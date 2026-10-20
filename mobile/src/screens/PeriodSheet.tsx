@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, TextInput, View } from 'react-native';
-import { DAYS, LEVELS, Period, divisionsFor, toMin, uid, validTime } from '../core';
+import { DAYS, LEVELS, Period, daysFor, divisionsFor, startDay, toMin, uid, validTime } from '../core';
 import { useStore } from '../store';
 import { useTheme } from '../theme';
 import { Btn, Chip, Label, Row, T, Toggle } from '../ui';
@@ -16,7 +16,7 @@ export function PeriodSheet({ period, defaultDay, onClose }: { period?: Period; 
   const [subject, setSubject] = useState(period?.subject ?? state.subjects[0] ?? '');
   const [level, setLevel] = useState(period?.level ?? 'JSS 1');
   const [division, setDivision] = useState(period?.division ?? 'Ruby');
-  const [days, setDays] = useState<number[]>(period?.days ?? [defaultDay >= 1 && defaultDay <= 5 ? defaultDay : 1]);
+  const [days, setDays] = useState<number[]>(period?.days ?? [startDay(defaultDay, state.settings.saturday)]);
   const [start, setStart] = useState(period?.start ?? '');
   const [end, setEnd] = useState(period?.end ?? '');
   const [room, setRoom] = useState(period?.room ?? '');
@@ -66,7 +66,7 @@ export function PeriodSheet({ period, defaultDay, onClose }: { period?: Period; 
             <Row style={{ marginTop: 10 }}>{divisionsFor(level).map((d) => <Chip key={d} label={d} on={division === d} onPress={() => setDivision(d)} />)}</Row>
 
             <Label>Days</Label>
-            <Row>{DAYS.map((d) => <Chip key={d.n} label={d.short} on={days.includes(d.n)} onPress={() => toggleDay(d.n)} />)}</Row>
+            <Row>{DAYS.filter((d) => daysFor(state.settings.saturday).includes(d) || days.includes(d.n)).map((d) => <Chip key={d.n} label={d.short} on={days.includes(d.n)} onPress={() => toggleDay(d.n)} />)}</Row>
 
             <View style={{ flexDirection: 'row', gap: 12 }}>
               <View style={{ flex: 1 }}>
