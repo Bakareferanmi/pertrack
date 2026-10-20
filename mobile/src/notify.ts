@@ -14,9 +14,13 @@ const inExpoGo = Constants.executionEnvironment === ExecutionEnvironment.StoreCl
 
 // Load lazily and defensively: if the native module is missing (older Expo Go, web, etc.)
 // the require throws, we catch it, and reminders simply stay off instead of crashing the app.
+/** Why reminders are unavailable (shown in Settings), or null when they load fine. */
+export let loadError: string | null = null;
+
 function loadNotifications(): typeof import('expo-notifications') | null {
-  if (Platform.OS === 'web' || (Platform.OS === 'android' && inExpoGo)) return null;
-  try { return require('expo-notifications'); } catch { return null; }
+  if (Platform.OS === 'web') { loadError = 'not supported on web'; return null; }
+  if (Platform.OS === 'android' && inExpoGo) { loadError = 'Expo Go on Android does not support reminders'; return null; }
+  try { return require('expo-notifications'); } catch (e) { loadError = String((e as Error)?.message ?? e); return null; }
 }
 
 const Notifications: typeof import('expo-notifications') = loadNotifications() as never;
@@ -111,8 +115,15 @@ export async function syncReminders(state: State): Promise<{ scheduled: number; 
   return { scheduled: slots.length, capped };
 }
 
+/** How many weekly reminders are currently scheduled on the phone. */
+export async function scheduledCount(): Promise<number> {
+  if (!remindersSupported) return 0;
+  return (await Notifications.getAllScheduledNotificationsAsync()).length;
+}
+
+/** Schedules a test notification in 3 seconds. Throws a readable error if it can't. */
 export async function sendTest(sound: boolean) {
-  if (!remindersSupported) return;
+  if (!remindersSupported) throw new Error(loadError ?? 'Reminders are not available in this build.');
   await ensureChannels();
   await Notifications.scheduleNotificationAsync({
     content: { title: 'PERTRACK test', body: 'Reminders are working on this phone.', sound },

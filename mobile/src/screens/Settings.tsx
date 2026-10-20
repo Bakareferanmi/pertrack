@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Alert, Platform, ScrollView, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { TITLES, greetingName } from '../core';
-import { askPermission, permissionGranted, remindersSupported, sendTest } from '../notify';
+import { askPermission, loadError, permissionGranted, remindersSupported, scheduledCount, sendTest } from '../notify';
 import { useStore } from '../store';
 import { useTheme } from '../theme';
 import { Btn, Card, Chip, Label, Row, T, Toggle } from '../ui';
@@ -12,9 +12,29 @@ export function Settings() {
   const { state, update, reset, capped } = useStore();
   const [granted, setGranted] = useState(false);
   const [draft, setDraft] = useState('');
+  const [count, setCount] = useState<number | null>(null);
   const p = state.profile!;
 
-  useEffect(() => { permissionGranted().then(setGranted); }, []);
+  useEffect(() => { permissionGranted().then(setGranted).catch(() => {}); }, []);
+  // show how many reminders the phone really has scheduled (re-checked after changes)
+  useEffect(() => {
+    const id = setTimeout(() => { scheduledCount().then(setCount).catch(() => setCount(null)); }, 1500);
+    return () => clearTimeout(id);
+  }, [state.periods, state.settings, granted]);
+
+  const runTest = async () => {
+    try {
+      if (!granted) {
+        const ok = await askPermission();
+        setGranted(ok);
+        if (!ok) { Alert.alert('Notifications are blocked', 'Open your phone Settings > Apps > PERTRACK > Notifications and allow them, then try again.'); return; }
+      }
+      await sendTest(state.settings.sound);
+      Alert.alert('Test scheduled', 'Press the Home button now. A PERTRACK notification should appear in about 3 seconds.');
+    } catch (e) {
+      Alert.alert('Test failed', String((e as Error)?.message ?? e));
+    }
+  };
 
   const enable = async () => {
     const ok = await askPermission();
@@ -82,7 +102,7 @@ export function Settings() {
           <View style={rowStyle}>
             <View style={{ flex: 1, paddingRight: 12 }}>
               <T weight="600">Class reminders</T>
-              <T size={13} muted>{Platform.OS === 'web' ? 'Phone reminders work in the mobile app.' : !remindersSupported ? 'Not available in Expo Go on Android. Use a development build to get reminders.' : granted ? 'On — they fire even when the app is closed.' : 'Off — allow notifications to get reminders.'}</T>
+              <T size={13} muted>{Platform.OS === 'web' ? 'Phone reminders work in the mobile app.' : !remindersSupported ? `Reminders are unavailable here: ${loadError ?? 'unknown reason'}.` : granted ? 'On — they fire even when the app is closed.' : 'Off — allow notifications to get reminders.'}</T>
             </View>
             {!remindersSupported ? null : granted ? <T color={c.primary} weight="700">Enabled</T> : <Btn testID="enable-notif" label="Enable" onPress={enable} />}
           </View>
@@ -91,7 +111,8 @@ export function Settings() {
             <Toggle on={state.settings.sound} onChange={(v) => update((s) => ({ ...s, settings: { ...s.settings, sound: v } }))} />
           </View>
           <View style={{ marginTop: 8 }}>
-            <Btn kind="ghost" label="Send a test reminder (3 seconds)" disabled={!granted} onPress={() => sendTest(state.settings.sound)} />
+            <Btn kind="ghost" label="Send a test reminder (3 seconds)" onPress={runTest} />
+            {remindersSupported ? <T size={12} muted style={{ marginTop: 8 }}>Permission: {granted ? 'allowed' : 'not allowed'} · Reminders scheduled on this phone: {count ?? '…'}</T> : null}
           </View>
           {capped ? <T size={12} color={c.danger} style={{ marginTop: 10 }}>iPhones allow about 64 scheduled reminders, so only the soonest ones are scheduled. Turn off reminders you don't need.</T> : null}
         </Card>
