@@ -2,7 +2,7 @@
   "expo": {
     "name": "PERTRACK",
     "slug": "pertrack",
-    "version": "1.0.2",
+    "version": "1.0.3",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
@@ -19,7 +19,11 @@
       },
       "predictiveBackGestureEnabled": false,
       "package": "com.beepeelabs.pertrack",
-      "versionCode": 3
+      "versionCode": 4,
+      "permissions": [
+        "USE_EXACT_ALARM",
+        "SCHEDULE_EXACT_ALARM"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png",

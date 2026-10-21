@@ -1,13 +1,14 @@
 import { useState } from 'react';
 import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, TextInput, View } from 'react-native';
-import { DAYS, LEVELS, Period, daysFor, divisionsFor, startDay, toMin, uid, validTime } from '../core';
+import { AmPm, DAYS, LEVELS, Period, daysFor, divisionsFor, from12, startDay, to12, toMin, uid } from '../core';
 import { useStore } from '../store';
 import { useTheme } from '../theme';
 import { Btn, Chip, Label, Row, T, Toggle } from '../ui';
 
+// Types as digits and shows h:mm  ("830" -> "8:30", "1005" -> "10:05"); AM/PM is picked separately.
 const maskTime = (v: string) => {
   const d = v.replace(/\D/g, '').slice(0, 4);
-  return d.length > 2 ? `${d.slice(0, 2)}:${d.slice(2)}` : d;
+  return d.length > 2 ? `${d.slice(0, d.length - 2)}:${d.slice(-2)}` : d;
 };
 
 export function PeriodSheet({ period, defaultDay, onClose }: { period?: Period; defaultDay: number; onClose: () => void }) {
@@ -17,8 +18,10 @@ export function PeriodSheet({ period, defaultDay, onClose }: { period?: Period; 
   const [level, setLevel] = useState(period?.level ?? 'JSS 1');
   const [division, setDivision] = useState(period?.division ?? 'Ruby');
   const [days, setDays] = useState<number[]>(period?.days ?? [startDay(defaultDay, state.settings.saturday)]);
-  const [start, setStart] = useState(period?.start ?? '');
-  const [end, setEnd] = useState(period?.end ?? '');
+  const [start, setStart] = useState(period ? to12(period.start).text : '');
+  const [startAp, setStartAp] = useState<AmPm>(period ? to12(period.start).ap : 'AM');
+  const [end, setEnd] = useState(period ? to12(period.end).text : '');
+  const [endAp, setEndAp] = useState<AmPm>(period ? to12(period.end).ap : 'AM');
   const [room, setRoom] = useState(period?.room ?? '');
   const [num, setNum] = useState(period?.period ?? '');
   const [pre, setPre] = useState(period?.pre ?? true);
@@ -35,9 +38,10 @@ export function PeriodSheet({ period, defaultDay, onClose }: { period?: Period; 
     if (!subject.trim()) return setErr('Choose or type a subject.');
     if (!days.length) return setErr('Pick at least one day.');
     if (!num.trim()) return setErr('Enter the period number (e.g. 3).');
-    if (!validTime(start) || !validTime(end)) return setErr('Enter times like 08:30 (24-hour).');
-    if (toMin(end) <= toMin(start)) return setErr('End time must be after start time.');
-    const next: Period = { id: period?.id ?? uid(), subject: subject.trim(), level, division, days, start, end, room: room.trim(), period: num.trim(), pre, at };
+    const start24 = from12(start, startAp), end24 = from12(end, endAp);
+    if (!start24 || !end24) return setErr('Enter times like 8:30 and choose AM or PM.');
+    if (toMin(end24) <= toMin(start24)) return setErr('End time must be after start time.');
+    const next: Period = { id: period?.id ?? uid(), subject: subject.trim(), level, division, days, start: start24, end: end24, room: room.trim(), period: num.trim(), pre, at };
     update((s) => {
       const subjects = s.subjects.some((x) => x.toLowerCase() === next.subject.toLowerCase()) ? s.subjects : [...s.subjects, next.subject];
       const periods = period ? s.periods.map((p) => (p.id === period.id ? next : p)) : [...s.periods, next];
@@ -73,11 +77,13 @@ export function PeriodSheet({ period, defaultDay, onClose }: { period?: Period; 
             <View style={{ flexDirection: 'row', gap: 12 }}>
               <View style={{ flex: 1 }}>
                 <Label>Starts</Label>
-                <TextInput testID="f-start" value={start} onChangeText={(v) => setStart(maskTime(v))} placeholder="08:30" placeholderTextColor={c.muted} keyboardType="number-pad" maxLength={5} style={input} />
+                <TextInput testID="f-start" value={start} onChangeText={(v) => setStart(maskTime(v))} placeholder="8:30" placeholderTextColor={c.muted} keyboardType="number-pad" maxLength={5} style={input} />
+                <Row style={{ marginTop: 8 }}>{(['AM', 'PM'] as const).map((a) => <Chip key={a} label={a} on={startAp === a} onPress={() => setStartAp(a)} />)}</Row>
               </View>
               <View style={{ flex: 1 }}>
                 <Label>Ends</Label>
-                <TextInput testID="f-end" value={end} onChangeText={(v) => setEnd(maskTime(v))} placeholder="09:10" placeholderTextColor={c.muted} keyboardType="number-pad" maxLength={5} style={input} />
+                <TextInput testID="f-end" value={end} onChangeText={(v) => setEnd(maskTime(v))} placeholder="9:10" placeholderTextColor={c.muted} keyboardType="number-pad" maxLength={5} style={input} />
+                <Row style={{ marginTop: 8 }}>{(['AM', 'PM'] as const).map((a) => <Chip key={a} label={a} on={endAp === a} onPress={() => setEndAp(a)} />)}</Row>
               </View>
             </View>
 

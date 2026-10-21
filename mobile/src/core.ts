@@ -60,6 +60,24 @@ export const fmt = (t: string) => {
 
 export const validTime = (t: string) => /^([01]\d|2[0-3]):[0-5]\d$/.test(t);
 
+export type AmPm = 'AM' | 'PM';
+
+/** "13:05" -> { text: "1:05", ap: "PM" } for the 12-hour entry fields. */
+export const to12 = (t: string): { text: string; ap: AmPm } => {
+  if (!validTime(t)) return { text: '', ap: 'AM' };
+  const [h, m] = t.split(':').map(Number);
+  return { text: `${h % 12 === 0 ? 12 : h % 12}:${String(m).padStart(2, '0')}`, ap: h < 12 ? 'AM' : 'PM' };
+};
+
+/** "1:05" + "PM" -> "13:05" (24h, how times are stored). Returns null if it isn't a valid 12-hour time. */
+export const from12 = (text: string, ap: AmPm): string | null => {
+  const m = /^(\d{1,2}):(\d{2})$/.exec(text.trim());
+  if (!m) return null;
+  const h = Number(m[1]), min = Number(m[2]);
+  if (h < 1 || h > 12 || min > 59) return null;
+  return `${String((h % 12) + (ap === 'PM' ? 12 : 0)).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
+};
+
 export const greetingName = (p: State['profile']) => {
   if (!p) return '';
   const last = p.name.trim().split(/\s+/).pop() ?? '';

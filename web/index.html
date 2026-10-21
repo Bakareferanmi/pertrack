@@ -55,7 +55,7 @@ main{flex:1;min-width:0;width:100%;max-width:560px;margin:0 auto;padding:max(24p
 .sh{display:flex;justify-content:space-between;align-items:center;margin:22px 0 4px;gap:10px}
 .sh h2{font-size:17px}
 .prow{display:flex;gap:12px;align-items:center;margin-top:8px}
-.time{width:46px;flex:0 0 46px;font-size:14px;font-weight:700}
+.time{width:70px;flex:0 0 70px;font-size:14px;font-weight:700}
 .time small{display:block;font-size:12px;font-weight:400;color:var(--mu)}
 .pc{flex:1;min-width:0;display:flex;align-items:center;justify-content:space-between;gap:6px;background:var(--sf);border:1px solid var(--bd);border-radius:16px;padding:4px 6px 4px 14px;min-height:58px}
 .pc.done{color:var(--mu)}.pc.done b{color:var(--mu)}
@@ -93,7 +93,7 @@ main{flex:1;min-width:0;width:100%;max-width:560px;margin:0 auto;padding:max(24p
 .sub{display:inline-flex;align-items:center;height:44px;padding:0 0 0 14px;border-radius:12px;background:var(--sf);border:1px solid var(--ibd);font-weight:600;font-size:14px}
 .addrow{display:flex;gap:8px}.addrow .in{height:48px;flex:1;min-width:0}.addrow .btn{height:48px}
 .hint{font-size:12px;color:var(--mu)}
-.row3{display:flex;gap:10px}.row3 .fld{flex:1;min-width:0;margin-top:14px}
+.chs.ap{margin-top:8px}.row3{display:flex;gap:10px}.row3 .fld{flex:1;min-width:0;margin-top:14px}
 .err{color:#D92D20;font-size:14px;font-weight:600;margin-top:10px}
 :root[data-theme=dark] .err{color:#FF8A80}
 .days{display:flex;gap:8px}.days .ch{flex:1;min-width:0;padding:0}
@@ -176,7 +176,11 @@ const dayNums=()=>sat()?[1,2,3,4,5,6]:[1,2,3,4,5];
 /* ---------- helpers ---------- */
 const pad=n=>String(n).padStart(2,'0');
 const toMin=t=>{const [h,m]=String(t).split(':').map(Number);return h*60+m};
-const fmt=m=>pad(Math.floor(m/60)%24)+':'+pad(m%60);
+const hhmm=m=>pad(Math.floor(m/60)%24)+':'+pad(m%60);          // 24h, how times are stored
+const fmt=m=>{m=((m%1440)+1440)%1440;const h=Math.floor(m/60);return((h%12)||12)+':'+pad(m%60)+' '+(h<12?'AM':'PM')};   // 12-hour, how times are shown
+const t12=t=>fmt(toMin(t));
+const to12=t=>{const m=toMin(t),h=Math.floor(m/60)%24;return{t:((h%12)||12)+':'+pad(m%60),ap:h<12?'AM':'PM'}};
+const from12=(txt,ap)=>{const m=/^(\d{1,2}):(\d{2})$/.exec(String(txt).trim());if(!m)return null;const h=+m[1],mi=+m[2];if(h<1||h>12||mi>59)return null;return pad(h%12+(ap==='PM'?12:0))+':'+pad(mi)};
 const iso=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
 const secNow=d=>d.getHours()*3600+d.getMinutes()*60+d.getSeconds();
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -242,7 +246,7 @@ clearTimeout(bt);if(b.k==='pre')bt=setTimeout(()=>{ui.banner=null;renderBanner()
 }
 function fire(p,k,force){
 const title=k==='pre'?`${p.subject} starts in 5 minutes`:`Time for ${p.subject}`;
-const body=`${pgrp(p)}${p.room?' · '+p.room:''} · ${p.start} – ${p.end}`;
+const body=`${pgrp(p)}${p.room?' · '+p.room:''} · ${t12(p.start)} – ${t12(p.end)}`;
 ui.banner={k,title,body};renderBanner();
 beep(k==='at'?3:1);
 if(navigator.vibrate)try{navigator.vibrate(k==='at'?[300,120,300,120,300]:[200,100,200])}catch(e){}
@@ -250,7 +254,7 @@ if(force||document.visibilityState!=='visible')notify(title,body,p.id+k);
 }
 function testAlert(){
 const n=new Date(),s=n.getHours()*60+n.getMinutes()+5;
-fire({id:'test',subject:S.subjects[0]||'Mathematics',level:'SS 1',division:'Science',room:'Room 4',start:fmt(s),end:fmt(s+40)},'pre',true);
+fire({id:'test',subject:S.subjects[0]||'Mathematics',level:'SS 1',division:'Science',room:'Room 4',start:hhmm(s),end:hhmm(s+40)},'pre',true);
 }
 async function askNotif(){
 if(!('Notification' in window))return;
@@ -323,14 +327,14 @@ const now=new Date(),st=status(now),p=st.live||st.next,n=st.n;
 if(!p){
 if(!S.periods.length)return`<div class="disp h2x">No periods yet</div><p class="hs2">Add your first class to start getting reminders.</p><button type="button" class="btn amb" data-act="add">${svg('plus',18,2.6)}Add a period</button>`;
 const u=upcomingDay(now);
-return`<span class="badge" style="align-self:flex-start">${st.list.length?'All done for today':'No classes today'}</span>${u?`<div class="disp h2x">${esc(u.p.subject)}</div><p class="hs2">${u.i===1?'Tomorrow':DAYS[u.d.getDay()]} · ${u.p.start} · ${esc(pgrp(u.p))}</p>`:''}`;
+return`<span class="badge" style="align-self:flex-start">${st.list.length?'All done for today':'No classes today'}</span>${u?`<div class="disp h2x">${esc(u.p.subject)}</div><p class="hs2">${u.i===1?'Tomorrow':DAYS[u.d.getDay()]} · ${t12(u.p.start)} · ${esc(pgrp(u.p))}</p>`:''}`;
 }
 const live=!!st.live,sM=toMin(p.start),left=(live?toMin(p.end)*60:sM*60)-n;
 const badge=live?'In session':left<=300?`Starts in ${Math.max(1,Math.ceil(left/60))} min`:'Next up';
 const chip=(on,tM,label)=>{const sent=n>=tM*60;return`<div class="rc"><b>${on&&sent?svg('check',16,2.5):svg('bell',16,2.2)}${label}</b><span>${on?(sent?'Sent at ':'Rings at ')+fmt(tM):'Off'}</span></div>`};
 return`<div class="hrow"><span class="badge">${badge}</span><span class="hs">${live?'Now':'Up next'}</span></div>
 <div class="disp h2x">${esc(p.subject)}</div>
-<p class="hs2">${esc(pgrp(p))}${p.room?' · '+esc(p.room):''} · ${p.start} – ${p.end}</p>
+<p class="hs2">${esc(pgrp(p))}${p.room?' · '+esc(p.room):''} · ${t12(p.start)} – ${t12(p.end)}</p>
 <div class="hrow end"><div class="disp cd">${cdText(left)}</div><span class="hs">${live?'until it ends':'until the bell'}</span></div>
 <div class="rcs">${chip(p.pre,sM-5,'5 min before')}${chip(p.at,sM,'At start time')}</div>`;
 }
@@ -339,7 +343,7 @@ const n=st.n,done=isToday&&n>=toMin(p.end)*60,live=isToday&&st.live&&st.live.id=
 const on=p.pre||p.at,cl=done?'done':live?'live':next?'next':'';
 const right=done?`<span class="ib sm" style="color:var(--mu)" role="img" aria-label="Done">${svg('done',22)}</span>`
 :`${live?'<span class="tag">Now</span>':next?'<span class="tag">Next</span>':''}<button type="button" class="ib bellb ${on?'':'off'}" data-act="bell" data-id="${p.id}" aria-label="${on?'Reminders on':'Reminders off'} for ${esc(p.subject)}">${svg(on?'bell':'bellOff',20)}</button>`;
-return`<div class="prow"><div class="time">${p.start}<small>${p.end}</small></div><div class="pc ${cl}"><button type="button" class="pc-main" data-act="edit" data-id="${p.id}"><b>${esc(p.subject)}</b><small><i class="dot ${DC[p.division]||''}"></i>${esc(pgrp(p))}${p.room?' · '+esc(p.room):''}</small></button>${right}</div></div>`;
+return`<div class="prow"><div class="time">${t12(p.start)}<small>${t12(p.end)}</small></div><div class="pc ${cl}"><button type="button" class="pc-main" data-act="edit" data-id="${p.id}"><b>${esc(p.subject)}</b><small><i class="dot ${DC[p.division]||''}"></i>${esc(pgrp(p))}${p.room?' · '+esc(p.room):''}</small></button>${right}</div></div>`;
 }
 function vToday(){
 const now=new Date(),st=status(now),perm='Notification' in window?Notification.permission:'unsupported';
@@ -405,15 +409,18 @@ scrollTo(0,y);
 function openSheet(p){
 const dow=new Date().getDay();
 ui.sheet=p?{...p,days:p.days.slice(),err:''}:{id:null,subject:S.subjects[0]||'',level:'JSS 1',division:'Ruby',days:[ui.tab==='timetable'?ui.day:(dayNums().includes(dow)?dow:1)],start:'08:00',end:'08:40',room:'',period:'',pre:true,at:true,err:''};
+const a=to12(ui.sheet.start),b=to12(ui.sheet.end);Object.assign(ui.sheet,{startT:a.t,startAp:a.ap,endT:b.t,endAp:b.ap});
 renderSheet();
 }
+const remSubs=()=>{const d=ui.sheet,ok=/^\d\d:\d\d$/.test(d.start),a=$('#rm-pre'),b=$('#rm-at');if(a)a.textContent=ok?fmt(toMin(d.start)-5)+' · starts in 5 min':'Set a start time';if(b)b.textContent=ok?fmt(toMin(d.start))+' · time for class':'Set a start time'};
+const syncT=()=>{const d=ui.sheet;d.start=from12(d.startT,d.startAp)||'';d.end=from12(d.endT,d.endAp)||''};
 function renderSheet(){
 const el=$('#sheet'),d=ui.sheet;
 if(!d){el.innerHTML='';return}
 const old=$('.sheet'),y=old?old.scrollTop:0;
 const subs=[...new Set([...S.subjects,d.subject].filter(Boolean))];
 const divs=DIVS[grpOf(d.level)];
-const tog=(k,l,t)=>`<div class="srow"><div><b>${l}</b><small>${t}</small></div><button type="button" class="swb" role="switch" aria-checked="${!!d[k]}" aria-label="${l}" data-act="f-tog" data-k="${k}"><span class="sw ${d[k]?'on':''}"><i></i></span></button></div>`;
+const tog=(k,l,t)=>`<div class="srow"><div><b>${l}</b><small id="rm-${k}">${t}</small></div><button type="button" class="swb" role="switch" aria-checked="${!!d[k]}" aria-label="${l}" data-act="f-tog" data-k="${k}"><span class="sw ${d[k]?'on':''}"><i></i></span></button></div>`;
 const sM=/^\d\d:\d\d$/.test(d.start)?toMin(d.start):null;
 el.innerHTML=`<div class="sbg" data-act="closeSheet"></div><div class="sheet" role="dialog" aria-modal="true" aria-label="${d.id?'Edit period':'New period'}">
 <div class="shd"><button type="button" class="ib" data-act="closeSheet" aria-label="Close">${svg('x')}</button><h2 class="disp">${d.id?'Edit period':'New period'}</h2><span style="width:44px"></span></div>
@@ -421,10 +428,11 @@ el.innerHTML=`<div class="sbg" data-act="closeSheet"></div><div class="sheet" ro
 <div class="fld"><span class="lbl">Class</span><div class="chs eq">${LEVELS.map(l=>`<button type="button" class="ch ${l===d.level?'on':''}" style="font-size:13px" aria-pressed="${l===d.level}" data-act="f-level" data-v="${l}">${l}</button>`).join('')}</div>
 <div class="chs eq">${divs.map(v=>`<button type="button" class="ch ${v===d.division?'on2':''}" aria-pressed="${v===d.division}" data-act="f-div" data-v="${v}"><i class="dot ${DC[v]}" style="margin:0"></i>${v}</button>`).join('')}</div></div>
 <div class="fld"><span class="lbl">Repeats every</span><div class="days">${[1,2,3,4,5,6].filter(i=>i<6||sat()||d.days.includes(6)).map(i=>`<button type="button" class="ch ${d.days.includes(i)?'on':''}" aria-pressed="${d.days.includes(i)}" data-act="f-day" data-d="${i}">${DAYS[i]}</button>`).join('')}</div></div>
-<div class="row3"><div class="fld"><label for="f-start">Starts</label><input id="f-start" class="in" type="time" data-f="start" value="${esc(d.start)}"></div><div class="fld"><label for="f-end">Ends</label><input id="f-end" class="in" type="time" data-f="end" value="${esc(d.end)}"></div></div>
+<div class="row3"><div class="fld"><label for="f-start">Starts</label><input id="f-start" class="in" inputmode="numeric" maxlength="5" data-f="startT" value="${esc(d.startT)}" placeholder="8:30" autocomplete="off"><div class="chs eq ap">${['AM','PM'].map(a=>`<button type="button" class="ch ${d.startAp===a?'on':''}" aria-pressed="${d.startAp===a}" data-act="f-ap" data-k="start" data-v="${a}">${a}</button>`).join('')}</div></div>
+<div class="fld"><label for="f-end">Ends</label><input id="f-end" class="in" inputmode="numeric" maxlength="5" data-f="endT" value="${esc(d.endT)}" placeholder="9:10" autocomplete="off"><div class="chs eq ap">${['AM','PM'].map(a=>`<button type="button" class="ch ${d.endAp===a?'on':''}" aria-pressed="${d.endAp===a}" data-act="f-ap" data-k="end" data-v="${a}">${a}</button>`).join('')}</div></div></div>
 <div class="fld"><label for="f-period">Period</label><input id="f-period" class="in" data-f="period" inputmode="numeric" maxlength="2" value="${esc(d.period||'')}" placeholder="e.g. 3 for 3rd period"></div>
 <div class="fld"><label for="f-room">Room (optional)</label><input id="f-room" class="in" data-f="room" value="${esc(d.room)}" placeholder="e.g. Room 4"></div>
-<div class="card" style="padding:4px 16px"><h3 style="padding-top:10px">Remind me</h3>${tog('pre','5 minutes before',sM===null?'Set a start time':fmt(sM-5)+' · starts in 5 min')}${tog('at','At start time',sM===null?'Set a start time':d.start+' · time for class')}</div>
+<div class="card" style="padding:4px 16px"><h3 style="padding-top:10px">Remind me</h3>${tog('pre','5 minutes before',sM===null?'Set a start time':fmt(sM-5)+' · starts in 5 min')}${tog('at','At start time',sM===null?'Set a start time':fmt(sM)+' · time for class')}</div>
 ${d.err?`<p class="err" role="alert">${esc(d.err)}</p>`:''}
 <div class="sfoot"><button type="button" class="btn pri big" data-act="saveP">Save period</button>${d.id?'<button type="button" class="btn danger big" data-act="delP">Delete period</button>':''}</div></div>`;
 const ns=$('.sheet');if(ns)ns.scrollTop=y;
@@ -434,7 +442,7 @@ const d=ui.sheet;
 if(!d.subject)d.err='Pick a subject (add some in Settings).';
 else if(!d.days.length)d.err='Choose at least one day.';
 else if(!String(d.period||'').trim())d.err='Enter the period number (e.g. 3).';
-else if(!/^\d\d:\d\d$/.test(d.start)||!/^\d\d:\d\d$/.test(d.end))d.err='Set a start and end time.';
+else if(!/^\d\d:\d\d$/.test(d.start)||!/^\d\d:\d\d$/.test(d.end))d.err='Enter times like 8:30 and choose AM or PM.';
 else if(toMin(d.end)<=toMin(d.start))d.err='End time must be after the start time.';
 else d.err='';
 if(d.err){renderSheet();return}
@@ -459,6 +467,7 @@ case'f-subject':ui.sheet.subject=v;renderSheet();break;
 case'f-level':{ui.sheet.level=v;const g=DIVS[grpOf(v)];if(!g.includes(ui.sheet.division))ui.sheet.division=g[0];renderSheet();break}
 case'f-div':ui.sheet.division=v;renderSheet();break;
 case'f-day':{const n=+b.dataset.d,a2=ui.sheet.days;ui.sheet.days=a2.includes(n)?a2.filter(x=>x!==n):a2.concat(n).sort();renderSheet();break}
+case'f-ap':ui.sheet[b.dataset.k+'Ap']=v;syncT();renderSheet();break;
 case'f-tog':ui.sheet[b.dataset.k]=!ui.sheet[b.dataset.k];renderSheet();break;
 case'saveP':saveP();break;
 case'delP':if(confirm('Delete this period?')){S.periods=S.periods.filter(x=>x.id!==ui.sheet.id);save();ui.sheet=null;renderSheet();render()}break;
@@ -483,13 +492,14 @@ document.addEventListener('click',e=>{const b=e.target.closest('[data-act]');if(
 document.addEventListener('input',e=>{
 const t=e.target,f=t.dataset.f,i=t.dataset.in;
 if(f==='period'){t.value=t.value.replace(/\D/g,'').slice(0,2)}
-if(f&&ui.sheet){ui.sheet[f]=t.value;if(f==='start'||f==='end'){ui.sheet.err=''}}
+if(f==='startT'||f==='endT'){const g=t.value.replace(/\D/g,'').slice(0,4);t.value=g.length>2?g.slice(0,-2)+':'+g.slice(-2):g}
+if(f&&ui.sheet){ui.sheet[f]=t.value;if(f==='startT'||f==='endT'){syncT();ui.sheet.err='';remSubs()}}
 if(i==='ob-name'){ui.ob.name=t.value;updOb()}
 if(i==='pname'&&S.profile){S.profile.name=t.value;save()}
 });
 document.addEventListener('change',e=>{
 const t=e.target;
-if(t.dataset.f==='start'||t.dataset.f==='end'){ui.sheet[t.dataset.f]=t.value;renderSheet()}
+if(t.dataset.f==='startT'||t.dataset.f==='endT'){syncT();remSubs()}
 });
 document.addEventListener('keydown',e=>{
 if(e.key==='Enter'&&e.target.dataset&&e.target.dataset.enter){e.preventDefault();act(e.target.dataset.enter,e.target)}
