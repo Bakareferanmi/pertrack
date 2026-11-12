@@ -14,5 +14,5 @@ database_id = "f44208e1-3a51-4c98-b45b-45874c473e98"   # printed by: npx wrangle
 # Contact claim sent to push services (a URL or mailto: you control).
 VAPID_SUBJECT = "https://beepeelabs.cv"
 # Lock the API to your PWA's origin once it is deployed, e.g. "https://pertrack.vercel.app". "*" allows any site.
-ALLOWED_ORIGIN = "*"
+ALLOWED_ORIGIN = "https://pertrack.vercel.app"
 # Secrets (set with `npx wrangler secret put NAME`, never commit them): VAPID_PUBLIC, VAPID_PRIVATE

@@ -114,6 +114,9 @@ export default {
     const url = new URL(req.url);
     if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors });
     if (req.method === 'GET' && url.pathname === '/') return J({ ok: true, service: 'pertrack-push' }, 200, cors);
+    // The VAPID *public* key is public by design; the PWA fetches it so nobody has to copy it by hand.
+    if (req.method === 'GET' && url.pathname === '/api/key')
+      return J({ key: env.VAPID_PUBLIC }, 200, { ...cors, 'cache-control': 'public, max-age=3600' });
     if (req.method !== 'POST') return J({ error: 'not found' }, 404, cors);
     if (Number(req.headers.get('content-length') || 0) > 100000) return J({ error: 'too large' }, 413, cors);
 
