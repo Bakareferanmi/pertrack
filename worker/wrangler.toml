@@ -1,0 +1,18 @@
+name = "pertrack-push"
+main = "src/index.js"
+compatibility_date = "2025-01-01"
+
+[triggers]
+crons = ["* * * * *"]            # every minute
+
+[[d1_databases]]
+binding = "DB"
+database_name = "pertrack"
+database_id = "f44208e1-3a51-4c98-b45b-45874c473e98"   # printed by: npx wrangler d1 create pertrack
+
+[vars]
+# Contact claim sent to push services (a URL or mailto: you control).
+VAPID_SUBJECT = "https://beepeelabs.cv"
+# Lock the API to your PWA's origin once it is deployed, e.g. "https://pertrack.vercel.app". "*" allows any site.
+ALLOWED_ORIGIN = "*"
+# Secrets (set with `npx wrangler secret put NAME`, never commit them): VAPID_PUBLIC, VAPID_PRIVATE

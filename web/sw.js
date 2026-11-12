@@ -1,4 +1,4 @@
-const CACHE = 'pertrack-v2';
+const CACHE = 'pertrack-v3';
 const SHELL = ['./', 'index.html', 'manifest.json', 'icon.svg', 'icon-192.png', 'icon-512.png'];
 
 self.addEventListener('install', (e) => {
@@ -38,4 +38,27 @@ self.addEventListener('notificationclick', (e) => {
       return clients.openWindow('./');
     })
   );
+});
+
+// Closed-app reminders: the reminder server pushes {title, body, tag}. If PERTRACK is open on screen it
+// already shows its own banner and chime, so we only raise a system notification when it isn't.
+self.addEventListener('push', (e) => {
+  let d = {};
+  try { d = e.data ? e.data.json() : {}; } catch (_) { d = {}; }
+  if (!d || typeof d !== 'object') d = {};
+  e.waitUntil((async () => {
+    const wins = await clients.matchAll({ type: 'window', includeUncontrolled: true });
+    if (wins.some((w) => w.visibilityState === 'visible')) {
+      wins.forEach((w) => w.postMessage({ type: 'push', d }));
+      return;
+    }
+    await self.registration.showNotification(d.title || 'PERTRACK', {
+      body: d.body || '',
+      tag: d.tag || 'pertrack',
+      icon: 'icon-192.png',
+      badge: 'icon.svg',
+      vibrate: [200, 100, 200],
+      renotify: true,
+    });
+  })());
 });

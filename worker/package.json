@@ -1,0 +1,15 @@
+{
+  "name": "pertrack-push",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "keys": "node scripts/gen-vapid.mjs",
+    "db": "wrangler d1 execute pertrack --remote --file=schema.sql",
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy"
+  },
+  "devDependencies": {
+    "wrangler": "^4.0.0"
+  }
+}
