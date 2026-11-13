@@ -351,6 +351,7 @@ out.push({day:m<0?(d+6)%7:d,min:(m+1440)%1440,k,tag:String(p.id).slice(0,50)+k,t
 });
 return out.slice(0,200);
 }
+const tag=(stage,e)=>{if(!e||typeof e!=='object')e=new Error(String(e));try{e.stage=stage}catch(x){}return e};
 async function pushKey(){
 if(PUSH_KEY)return PUSH_KEY;
 try{const k=localStorage.getItem('pertrack:pushkey');if(k)return k}catch(e){}
@@ -364,13 +365,24 @@ return k;
 async function pushSub(create){
 const reg=await navigator.serviceWorker.ready;
 let sub=await reg.pushManager.getSubscription();
-if(!sub&&create)sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:u8(await pushKey())});
+if(!sub&&create){
+let key;try{key=await pushKey()}catch(e){throw tag('key',e)}
+try{sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:u8(key)})}catch(e){throw tag('subscribe',e)}
+}
 return sub;
 }
 async function pushPost(path,body){
-const r=await fetch(PUSH_URL.replace(/\/$/,'')+path,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});
-if(!r.ok)throw new Error('HTTP '+r.status);
+let r;
+try{r=await fetch(PUSH_URL.replace(/\/$/,'')+path,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)})}
+catch(e){throw tag('server',new Error('no connection, or the server blocked this site'))}
+if(!r.ok){let m='HTTP '+r.status;try{m+=': '+(await r.json()).error}catch(e){}throw tag('server',new Error(m))}
 return r.json();
+}
+function pushErr(e){
+const n=(e&&e.name)||'Error',m=(e&&e.message)||'';
+if(e&&e.stage==='key')return`Couldn’t load the reminder key from the server (${m||n}).`;
+if(e&&e.stage==='subscribe')return`This browser couldn’t register for push (${n}${m?': '+m:''}). Chrome on Android needs Google services; Brave and some other browsers block it. Try Chrome, or use the Android app.`;
+return`Couldn’t reach the reminder server (${m||n}). PERTRACK will try again.`;
 }
 const redrawSettings=()=>{if(ui.tab==='settings'&&!ui.sheet)render()};
 async function syncPush(force){
@@ -383,7 +395,7 @@ if(!force&&prev.sig===sig&&Date.now()-prev.at<3*864e5)return;   // unchanged: no
 await pushPost('/api/subscribe',body);
 localStorage.setItem(PUSH_STORE,JSON.stringify({sig,at:Date.now()}));
 pushMsg='';
-}catch(e){pushMsg='Couldn’t reach the reminder server. PERTRACK will try again.'}
+}catch(e){pushMsg=pushErr(e)}
 redrawSettings();
 }
 function queueSync(){
@@ -403,8 +415,12 @@ S.settings.push=true;save();pushMsg='Setting up…';render();
 await syncPush(true);render();
 }
 async function testPush(){
-try{const sub=await pushSub(false);if(!sub)throw 0;await pushPost('/api/test',{subscription:sub.toJSON()});pushMsg='Close PERTRACK now. A test reminder should arrive in about 10 seconds.'}
-catch(e){pushMsg='Test failed. Check your connection and try turning closed-app reminders off and on.'}
+try{
+const sub=await pushSub(false);
+if(!sub){pushMsg='This phone isn’t registered yet. Turn closed-app reminders off and on again.';render();return}
+await pushPost('/api/test',{subscription:sub.toJSON()});
+pushMsg='Close PERTRACK now. A test reminder should arrive in about 10 seconds.';
+}catch(e){pushMsg='Test failed: '+pushErr(e)}
 render();
 }
 function pushStatus(){
